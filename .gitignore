@@ -1,0 +1,7 @@
+# Downloaded source data and generated outputs stay local.
+data/raw/
+data/processed/
+outputs/
+.ipynb_checkpoints/
+__pycache__/
+.venv/
