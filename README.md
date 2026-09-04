@@ -1,10 +1,10 @@
-# Predictive Maintenance Analytics for Industrial Equipment
+# Equipment Health and Failure-Risk Analytics for Industrial Operations
 
-An end-to-end portfolio project that uses operational equipment data to identify machine-failure risk and turn technical findings into practical maintenance insights.
+*An exploratory study of how operational data can reveal equipment health, failure risk, and earlier maintenance opportunities.*
 
 ## Why this project
 
-This project connects my Mechanical Engineering background with data operations, SQL, Python, visualization, and machine learning. The goal is to show a complete analytics workflow rather than a model in isolation.
+I created this project to explore how my Mechanical Engineering background and Data Analytics studies can work together to understand equipment health, failure risk, and industrial operations.
 
 ## Business question
 
