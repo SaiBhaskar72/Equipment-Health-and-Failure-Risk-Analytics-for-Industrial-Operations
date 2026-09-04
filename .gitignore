@@ -2,6 +2,7 @@
 data/raw/
 data/processed/
 outputs/
+PROJECT_LEARNING_NOTES.md
 .ipynb_checkpoints/
 __pycache__/
 .venv/
