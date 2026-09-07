@@ -6,3 +6,4 @@ PROJECT_LEARNING_NOTES.md
 .ipynb_checkpoints/
 __pycache__/
 .venv/
+/private-learning-notes/
