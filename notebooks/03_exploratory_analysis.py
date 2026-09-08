@@ -118,5 +118,38 @@ def main():
     )
     plt.close(fig)
 
+    # Compare failure rates across simple torque-speed operating groups.
+    median_torque = df["Torque [Nm]"].median()
+    median_speed = df["Rotational speed [rpm]"].median()
+
+    df["Torque group"] = df["Torque [Nm]"].apply(
+        lambda x: "High torque" if x >= median_torque else "Low torque"
+    )
+
+    df["Speed group"] = df["Rotational speed [rpm]"].apply(
+        lambda x: "High speed" if x >= median_speed else "Low speed"
+    )
+
+    operating_summary = (
+        df.groupby(["Speed group", "Torque group"])["Machine failure"]
+        .agg(
+            observations="size",
+            failures="sum",
+            failure_rate="mean",
+        )
+    )
+
+    operating_summary["failure_rate_percent"] = (
+        operating_summary["failure_rate"] * 100
+    )
+
+    print("\nTorque-speed operating groups:")
+    print(
+        operating_summary[
+            ["observations", "failures", "failure_rate_percent"]
+        ].round(2)
+    )
+
+
 if __name__ == "__main__":
     main()
