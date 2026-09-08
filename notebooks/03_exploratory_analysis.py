@@ -1,9 +1,9 @@
-"""Create basic charts for equipment failure analysis."""
+"""Create basic charts and summaries for equipment failure analysis."""
 
 from pathlib import Path
 
-import pandas as pd
 import matplotlib.pyplot as plt
+import pandas as pd
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
@@ -14,12 +14,14 @@ OUTPUT_DIR = PROJECT_ROOT / "outputs"
 def main():
     df = pd.read_csv(DATA_PATH)
 
-    # Calculate the percentage of failures within each product type.
+    # ------------------------------------------------------------
+    # Product type failure rates
+    # ------------------------------------------------------------
+
     failure_rates = (
         df.groupby("Type")["Machine failure"].mean() * 100
     ).reindex(["H", "M", "L"])
 
-    # Create the chart.
     fig, ax = plt.subplots(figsize=(7, 5))
     bars = ax.bar(failure_rates.index, failure_rates.values)
 
@@ -32,15 +34,20 @@ def main():
 
     fig.tight_layout()
 
-    # Save the chart in the local, Git-ignored outputs folder.
     OUTPUT_DIR.mkdir(exist_ok=True)
+
     chart_path = OUTPUT_DIR / "failure_rate_by_product_type.png"
     fig.savefig(chart_path, dpi=150)
     plt.close(fig)
 
     print("Chart saved to:", chart_path)
 
+    # ------------------------------------------------------------
+    # Tool wear analysis
+    # ------------------------------------------------------------
+
     print("\nTool wear by failure outcome:")
+
     print(
         df.groupby("Machine failure")["Tool wear [min]"].agg(
             observations="size",
@@ -48,15 +55,20 @@ def main():
         )
     )
 
-    # Compare tool-wear distributions using the same ranges.
     fig, axes = plt.subplots(
-        2, 1, figsize=(8, 6), sharex=True, sharey=True
+        2,
+        1,
+        figsize=(8, 6),
+        sharex=True,
+        sharey=True,
     )
 
     bins = list(range(0, 276, 25))
 
     for ax, outcome, label in zip(
-        axes, [0, 1], ["No failure", "Failure"]
+        axes,
+        [0, 1],
+        ["No failure", "Failure"],
     ):
         wear = df.loc[
             df["Machine failure"] == outcome,
@@ -72,32 +84,52 @@ def main():
             edgecolor="white",
         )
 
-        ax.set_title(f"{label} — {len(wear):,} observations")
+        ax.set_title(
+            f"{label} — {len(wear):,} observations"
+        )
         ax.set_ylabel("Group share (%)")
 
-    axes[-1].set_xlabel("Accumulated tool-use time (minutes)")
-    fig.suptitle("Tool wear by recorded failure outcome")
+    axes[-1].set_xlabel(
+        "Accumulated tool-use time (minutes)"
+    )
+
+    fig.suptitle(
+        "Tool wear by recorded failure outcome"
+    )
+
     fig.tight_layout()
 
     fig.savefig(
         OUTPUT_DIR / "tool_wear_by_failure.png",
         dpi=150,
     )
+
     plt.close(fig)
+
+    # ------------------------------------------------------------
+    # Torque and rotational speed analysis
+    # ------------------------------------------------------------
 
     print("\nTorque and speed by failure outcome:")
 
     print(
         df.groupby("Machine failure")[
-            ["Torque [Nm]", "Rotational speed [rpm]"]
+            [
+                "Torque [Nm]",
+                "Rotational speed [rpm]",
+            ]
         ].median()
     )
 
-    # Compare torque and rotational speed by failure outcome.
     fig, ax = plt.subplots(figsize=(8, 6))
 
-    for outcome, label in [(0, "No failure"), (1, "Failure")]:
-        subset = df[df["Machine failure"] == outcome]
+    for outcome, label in [
+        (0, "No failure"),
+        (1, "Failure"),
+    ]:
+        subset = df[
+            df["Machine failure"] == outcome
+        ]
 
         ax.scatter(
             subset["Rotational speed [rpm]"],
@@ -106,32 +138,66 @@ def main():
             alpha=0.5,
         )
 
-    ax.set_title("Torque vs rotational speed by failure outcome")
+    ax.set_title(
+        "Torque vs rotational speed by failure outcome"
+    )
     ax.set_xlabel("Rotational speed (rpm)")
     ax.set_ylabel("Torque (Nm)")
     ax.legend()
 
     fig.tight_layout()
+
     fig.savefig(
         OUTPUT_DIR / "torque_vs_speed_by_failure.png",
         dpi=150,
     )
+
     plt.close(fig)
 
-    # Compare failure rates across simple torque-speed operating groups.
-    median_torque = df["Torque [Nm]"].median()
-    median_speed = df["Rotational speed [rpm]"].median()
+    # ------------------------------------------------------------
+    # Torque-speed operating groups
+    # ------------------------------------------------------------
 
-    df["Torque group"] = df["Torque [Nm]"].apply(
-        lambda x: "High torque" if x >= median_torque else "Low torque"
+    # Dataset medians are used only to create exploratory groups.
+    # They are not engineering safety or failure thresholds.
+    median_torque = df["Torque [Nm]"].median()
+    median_speed = df[
+        "Rotational speed [rpm]"
+    ].median()
+
+    print("\nOperating-group median cutoffs:")
+    print(
+        f"Median torque: {median_torque:.1f} Nm"
+    )
+    print(
+        f"Median rotational speed: "
+        f"{median_speed:.0f} rpm"
     )
 
-    df["Speed group"] = df["Rotational speed [rpm]"].apply(
-        lambda x: "High speed" if x >= median_speed else "Low speed"
+    df["Torque group"] = df[
+        "Torque [Nm]"
+    ].apply(
+        lambda x: (
+            "High torque"
+            if x >= median_torque
+            else "Low torque"
+        )
+    )
+
+    df["Speed group"] = df[
+        "Rotational speed [rpm]"
+    ].apply(
+        lambda x: (
+            "High speed"
+            if x >= median_speed
+            else "Low speed"
+        )
     )
 
     operating_summary = (
-        df.groupby(["Speed group", "Torque group"])["Machine failure"]
+        df.groupby(
+            ["Speed group", "Torque group"]
+        )["Machine failure"]
         .agg(
             observations="size",
             failures="sum",
@@ -139,23 +205,38 @@ def main():
         )
     )
 
-    operating_summary["failure_rate_percent"] = (
-        operating_summary["failure_rate"] * 100
-    )
+    operating_summary[
+        "failure_rate_percent"
+    ] = operating_summary[
+        "failure_rate"
+    ] * 100
 
     print("\nTorque-speed operating groups:")
+
     print(
         operating_summary[
-            ["observations", "failures", "failure_rate_percent"]
+            [
+                "observations",
+                "failures",
+                "failure_rate_percent",
+            ]
         ].round(2)
     )
 
+    # ------------------------------------------------------------
+    # Temperature analysis
+    # ------------------------------------------------------------
 
     print("\nTemperature by failure outcome:")
 
-    temperature_summary = df.groupby("Machine failure")[
-        ["Air temperature [K]", "Process temperature [K]"]
-    ].median()
+    temperature_summary = (
+        df.groupby("Machine failure")[
+            [
+                "Air temperature [K]",
+                "Process temperature [K]",
+            ]
+        ].median()
+    )
 
     print(temperature_summary)
 
@@ -164,16 +245,21 @@ def main():
         - df["Air temperature [K]"]
     )
 
-    print("\nTemperature difference by failure outcome:")
+    print(
+        "\nTemperature difference "
+        "by failure outcome:"
+    )
+
     print(
         df.groupby("Machine failure")[
             "Temperature difference [K]"
         ].median()
     )
 
+    # ------------------------------------------------------------
+    # Final operating-condition summary
+    # ------------------------------------------------------------
 
-
-    # Final comparison of operating measurements by failure outcome.
     operating_columns = [
         "Air temperature [K]",
         "Process temperature [K]",
@@ -184,11 +270,15 @@ def main():
     ]
 
     print("\nOverall operating comparison:")
+
     print(
-        df.groupby("Machine failure")[operating_columns]
+        df.groupby("Machine failure")[
+            operating_columns
+        ]
         .median()
         .round(2)
     )
+
 
 if __name__ == "__main__":
     main()
