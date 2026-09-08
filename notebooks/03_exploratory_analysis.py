@@ -85,7 +85,38 @@ def main():
     )
     plt.close(fig)
 
+    print("\nTorque and speed by failure outcome:")
 
+    print(
+        df.groupby("Machine failure")[
+            ["Torque [Nm]", "Rotational speed [rpm]"]
+        ].median()
+    )
+
+    # Compare torque and rotational speed by failure outcome.
+    fig, ax = plt.subplots(figsize=(8, 6))
+
+    for outcome, label in [(0, "No failure"), (1, "Failure")]:
+        subset = df[df["Machine failure"] == outcome]
+
+        ax.scatter(
+            subset["Rotational speed [rpm]"],
+            subset["Torque [Nm]"],
+            label=label,
+            alpha=0.5,
+        )
+
+    ax.set_title("Torque vs rotational speed by failure outcome")
+    ax.set_xlabel("Rotational speed (rpm)")
+    ax.set_ylabel("Torque (Nm)")
+    ax.legend()
+
+    fig.tight_layout()
+    fig.savefig(
+        OUTPUT_DIR / "torque_vs_speed_by_failure.png",
+        dpi=150,
+    )
+    plt.close(fig)
 
 if __name__ == "__main__":
     main()
