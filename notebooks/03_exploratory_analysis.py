@@ -40,6 +40,52 @@ def main():
 
     print("Chart saved to:", chart_path)
 
+    print("\nTool wear by failure outcome:")
+    print(
+        df.groupby("Machine failure")["Tool wear [min]"].agg(
+            observations="size",
+            median_wear="median",
+        )
+    )
+
+    # Compare tool-wear distributions using the same ranges.
+    fig, axes = plt.subplots(
+        2, 1, figsize=(8, 6), sharex=True, sharey=True
+    )
+
+    bins = list(range(0, 276, 25))
+
+    for ax, outcome, label in zip(
+        axes, [0, 1], ["No failure", "Failure"]
+    ):
+        wear = df.loc[
+            df["Machine failure"] == outcome,
+            "Tool wear [min]",
+        ]
+
+        weights = [100 / len(wear)] * len(wear)
+
+        ax.hist(
+            wear,
+            bins=bins,
+            weights=weights,
+            edgecolor="white",
+        )
+
+        ax.set_title(f"{label} — {len(wear):,} observations")
+        ax.set_ylabel("Group share (%)")
+
+    axes[-1].set_xlabel("Accumulated tool-use time (minutes)")
+    fig.suptitle("Tool wear by recorded failure outcome")
+    fig.tight_layout()
+
+    fig.savefig(
+        OUTPUT_DIR / "tool_wear_by_failure.png",
+        dpi=150,
+    )
+    plt.close(fig)
+
+
 
 if __name__ == "__main__":
     main()
