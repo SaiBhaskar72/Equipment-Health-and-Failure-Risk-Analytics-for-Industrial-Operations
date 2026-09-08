@@ -172,5 +172,23 @@ def main():
     )
 
 
+
+    # Final comparison of operating measurements by failure outcome.
+    operating_columns = [
+        "Air temperature [K]",
+        "Process temperature [K]",
+        "Rotational speed [rpm]",
+        "Torque [Nm]",
+        "Tool wear [min]",
+        "Temperature difference [K]",
+    ]
+
+    print("\nOverall operating comparison:")
+    print(
+        df.groupby("Machine failure")[operating_columns]
+        .median()
+        .round(2)
+    )
+
 if __name__ == "__main__":
     main()
