@@ -151,5 +151,26 @@ def main():
     )
 
 
+    print("\nTemperature by failure outcome:")
+
+    temperature_summary = df.groupby("Machine failure")[
+        ["Air temperature [K]", "Process temperature [K]"]
+    ].median()
+
+    print(temperature_summary)
+
+    df["Temperature difference [K]"] = (
+        df["Process temperature [K]"]
+        - df["Air temperature [K]"]
+    )
+
+    print("\nTemperature difference by failure outcome:")
+    print(
+        df.groupby("Machine failure")[
+            "Temperature difference [K]"
+        ].median()
+    )
+
+
 if __name__ == "__main__":
     main()
