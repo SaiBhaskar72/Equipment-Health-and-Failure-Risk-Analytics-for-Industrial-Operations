@@ -8,7 +8,9 @@ I developed this project to explore how engineering knowledge and data analytics
 
 Drawing on my Mechanical Engineering background and studies in Data Analytics, I examined operating measurements such as temperature, rotational speed, torque and tool wear. The project follows an analytical workflow from data understanding and quality checks to SQL analysis, machine-learning classification and dashboard development.
 
-My objective was to investigate the evidence rather than confirm a predetermined conclusion. The study considers both findings that support the initial hypotheses and results that reveal limitations or suggest further questions.
+My objective was to investigate the evidence rather than confirm a predetermined conclusion. I wanted to understand which initial expectations the data supported, where the evidence was incomplete and what unexpected findings could teach me.
+
+![Industrial machinery](assets/industrial-machine.jpeg)
 
 ## Research Objective
 
@@ -22,91 +24,61 @@ The investigation focuses on:
 - Comparing machine-learning models through their predictions and errors.
 - Communicating findings clearly while distinguishing evidence from assumptions.
 
-## Technical Approach
+## Initial Expectations
 
-| Area | Tools and Methods | Application |
-|---|---|---|
-| Data understanding and preparation | Python, pandas | Inspect data types, missing values, identifiers, categories and label consistency |
-| Exploratory analysis | pandas, Matplotlib | Compare operating conditions, distributions and failure rates |
-| SQL analysis | MySQL | Answer operational questions using aggregation, grouping and conditional filtering |
-| Machine learning | scikit-learn | Compare an always-no-failure baseline, logistic regression and random forest |
-| Model preparation | Train/test splitting, pipelines, one-hot encoding, standardization | Prepare inputs consistently and fit preprocessing on training data |
-| Model evaluation | Precision, recall, F1, accuracy and confusion matrices | Assess detected failures, missed failures and false alarms |
-| Visualization | Tableau | Present equipment-health summaries through calculated measures, charts and a dashboard |
-| Version control | Git, GitHub | Maintain incremental commits, development branches and pull requests |
+The analysis was guided by the following expectations:
 
-## Project Workflow
+- **Tool wear:** Greater accumulated tool-use time would be associated with failure.
+- **Torque and speed:** Examining torque and rotational speed together would reveal operating patterns associated with failure.
+- **Temperature conditions:** A smaller process-to-air temperature difference, particularly at lower speed, would be associated with failure.
+- **Product type:** Failure rates would differ across product categories.
+- **Machine learning:** Operating measurements would help trained classifiers detect failures missed by an always-no-failure baseline.
 
-1. **Understand the data** — define the observation, column meanings and analytical questions.
-2. **Check data quality** — investigate missing values, repeated identifiers, measurement ranges and conflicting labels.
-3. **Explore operating patterns** — compare failure and non-failure observations and examine the research hypotheses.
-4. **Analyze with SQL** — reproduce selected summaries and answer operational questions.
-5. **Build the dashboard** — communicate recorded operating conditions and failure outcomes in Tableau.
-6. **Evaluate models** — compare a simple baseline with learned classifiers using the same data split.
-7. **Document the study** — explain findings, unexpected outcomes, limitations and potential next steps.
+These were starting points for investigation, not assumed conclusions. I examined them through descriptive analysis and model evaluation rather than formal statistical hypothesis tests.
 
-Data issues are investigated before changes are made. Where the correct value cannot be established, the uncertainty is documented rather than silently corrected.
+The [findings report](reports/findings.md) compares these expectations with the actual evidence, including relationships that were only partly supported or require further analysis.
 
-## Repository Structure
+## Analytical Approach
 
-```text
-├── README.md
-├── requirements.txt
-├── data/
-│   ├── README.md
-│   └── data-dictionary.md
-├── notebooks/
-│   ├── 01_data_understanding.py
-│   ├── 02_data_quality_checks.py
-│   ├── 03_exploratory_analysis.py
-│   ├── 04_baseline_models.py
-│   └── SQL/
-│       └── 01_failure_analysis.sql
-├── sql/
-│   └── README.md
-├── Tableau/
-│   ├── equipment_health_failure_risk_dashboard.twb
-│   └── EQUIPMENT HEALTH & FAILURE RISK ANALYTICS.png
-├── dashboard/
-│   └── README.md
-└── reports/
-    └── findings.md
-```
+I began by inspecting the dataset and checking missing values, identifiers, categories, measurement ranges and consistency between failure labels. Where conflicting information could not be resolved, I retained the original values and documented the uncertainty.
 
-Downloaded data, generated outputs and private learning notes are maintained locally and excluded from Git.
+Exploratory analysis compared operating conditions across failure and non-failure observations. SQL queries provided another way to investigate the data and cross-check selected summaries. Tableau brought the descriptive findings together in a dashboard.
 
-## Getting Started
+For machine learning, I compared an always-no-failure baseline, logistic regression and random forest using the same stratified training and test split. Evaluation considered detected failures, missed failures and false alarms—not accuracy alone.
 
-Download the dataset using the instructions in [data/README.md](data/README.md) and place `ai4i2020.csv` inside `data/raw/`.
+## Tools and Methods
 
-From the repository root, install the Python dependencies:
+| Area | Tools and application |
+|---|---|
+| Data understanding and quality | Python and pandas for inspecting data types, missing values, identifiers, categories and label consistency |
+| Exploratory analysis | pandas and Matplotlib for grouped summaries, distributions and operating-condition comparisons |
+| SQL analysis | MySQL queries using aggregation, grouping, ordering and conditional filtering |
+| Machine learning | Scikit-learn: always-no-failure baseline, logistic regression and random forest |
+| Model preparation | Stratified train/test splitting, preprocessing pipelines, categorical encoding, numeric scaling for logistic regression and balanced class weights |
+| Model evaluation | Accuracy, precision, recall, F1 scores and confusion matrices |
+| Dashboard development | Tableau calculated measures, KPI summaries and analytical charts |
+| Version control | Git branches, incremental commits and GitHub pull requests |
 
-```powershell
-python -m pip install -r requirements.txt
-```
+## Tableau Dashboard
 
-Run the analysis scripts in order:
+The dashboard presents recorded failure outcomes alongside product categories and operating measurements. It includes overall summaries, failure rates by product type, torque and speed comparisons, median tool wear and failure-mode counts.
 
-```powershell
-python notebooks/01_data_understanding.py
-python notebooks/02_data_quality_checks.py
-python notebooks/03_exploratory_analysis.py
-python notebooks/04_baseline_models.py
-```
+![Equipment Health and Failure-Risk Dashboard](Tableau/EQUIPMENT%20HEALTH%20%26%20FAILURE%20RISK%20ANALYTICS.png)
 
-The exploratory script saves charts to the local `outputs/` folder. The modeling script prints evaluation metrics and confusion matrices.
+The dashboard describes the observed dataset. It does not display model predictions or forecast future failures.
 
-For the other project components, follow the [SQL setup instructions](sql/README.md) and [Tableau workbook instructions](dashboard/README.md).
+[Read the detailed dashboard interpretation](reports/tableau-results.md) · [View the workbook documentation](dashboard/README.md)
 
 ## Results and Documentation
 
-The detailed results are kept separate from this overview:
+Detailed results are maintained separately from this overview:
 
-- **[Findings and conclusions](reports/findings.md)** — research hypotheses, observed results, model comparisons, interpretation and limitations.
-- **[Data dictionary](data/data-dictionary.md)** — variable definitions and intended roles.
-- **[Dataset documentation](data/README.md)** — source attribution and local setup.
-- **[SQL documentation](sql/README.md)** — analysis queries and database instructions.
-- **[Tableau documentation](dashboard/README.md)** — dashboard measures, screenshot and workbook setup.
+- **[Findings and conclusions](reports/findings.md):** hypotheses, observed evidence, model comparisons, interpretation and limitations.
+- **[Tableau results](reports/tableau-results.md):** explanations of the dashboard charts and their analytical meaning.
+- **[Python analysis and modeling](notebooks/):** scripts covering data understanding, quality checks, exploration and classification.
+- **[SQL analysis](sql/README.md):** analytical questions, query methods and links to the SQL code.
+- **[Dataset documentation](data/README.md):** source attribution and local data setup.
+- **[Data dictionary](data/data-dictionary.md):** column definitions and intended roles.
 
 ## Research Context and Limitations
 
@@ -114,19 +86,20 @@ This is an **educational research and portfolio project**, not a deployed indust
 
 The study uses the **AI4I 2020 Predictive Maintenance Dataset**, a **synthetic dataset** distributed through the UCI Machine Learning Repository. Its observations were generated to represent industrial operating conditions; they were not collected from a real factory for this project.
 
-The analysis explores associations and evaluates classification models. It does not establish causal relationships, a defined warning period before breakdown, or measurable maintenance savings.
+The analysis investigates associations and evaluates failure classification. It does not establish causal relationships, a defined warning period before breakdown or measurable maintenance savings.
 
-Applying the approach in industry would require validation using real equipment histories, measurements available before failure, and assessment of the resulting alerts by maintenance engineers.
+Model evaluation used one train/test split, and exploratory analysis of the full dataset preceded modeling. The results have not been externally validated. Applying this approach in industry would require real equipment histories, measurements available before failure, further evaluation and assessment by maintenance engineers.
+
+Raw data, generated outputs and private learning notes are maintained locally and excluded from GitHub.
 
 ## Dataset Attribution
 
-AI4I 2020 Predictive Maintenance Dataset. UCI Machine Learning Repository.
+AI4I 2020 Predictive Maintenance Dataset (2020), UCI Machine Learning Repository.
 
-- **Source:** [Dataset DOI](https://doi.org/10.24432/C5HS5C)
-- **Dataset license:** Creative Commons Attribution 4.0 International — CC BY 4.0
+[Dataset DOI](https://doi.org/10.24432/C5HS5C) · Dataset license: CC BY 4.0
 
 ## Author
 
 **Sai Bhaskar Chundru**  
 Mechanical Engineering background | Data Analytics  
-[GitHub](https://github.com/SaiBhaskar72)
+[GitHub Profile](https://github.com/SaiBhaskar72)
