@@ -1,79 +1,61 @@
-# Findings and interpretation
+## Tableau Dashboard Results
 
-Final portfolio report, October 27, 2026.
+The dashboard brings together the recorded failure outcomes and operating conditions from the full dataset. It supports exploration of the observations; it does not display machine-learning predictions or forecast future breakdowns.
 
-## Expectations versus actual evidence
+![Equipment Health and Failure-Risk Dashboard](../Tableau/EQUIPMENT%20HEALTH%20%26%20FAILURE%20RISK%20ANALYTICS.png)
 
-| Question | Expectation | Evidence | Conclusion |
-|---|---|---|---|
-| Tool wear | Greater wear accompanies failure | Median 165 minutes for failures versus 107 for non-failures; overlapping distributions | Descriptive support for association; wear alone is insufficient |
-| Torque and speed | Joint operating conditions help distinguish outcomes | Failure medians: 53.7 Nm and 1,365 rpm; non-failure: 39.9 Nm and 1,507 rpm | Patterns support further investigation; incremental predictive benefit was not separately tested |
-| Temperature gap | Smaller process-minus-air gap with lower speed accompanies more failures | Median gap 9.3 K for failures versus 9.8 K for non-failures | Directionally consistent; the specific gap-by-speed hypothesis was not fully tested |
-| Product type | Failure rates differ | L 235/6,000 = 3.92%; M 83/2,997 = 2.77%; H 21/1,003 = 2.09% | Descriptive differences, not causation or established statistical significance |
-| Modeling | Operating measurements improve detection over a no-failure rule | Logistic regression caught 56/68 failures; forest caught 39/68; baseline caught none | Better detection, with different false-alarm burdens; no universal winner |
+### Overall Failure Frequency
 
-These are exploratory hypotheses, partly informed by the synthetic generation rules. No formal significance tests were performed.
+The dashboard reports **10,000 observations, 339 recorded failures and a 3.39% failure rate**.
 
-## Data quality
+Failures represent a small proportion of the dataset. This imbalance influenced the modeling stage: a high overall accuracy could conceal poor failure detection, so evaluation also considered precision, recall, F1 and confusion matrices.
 
-Each row is an operating observation, not necessarily a separate machine. The file has 10,000 rows, 14 columns, no missing values and no repeated UDI identifiers. Product types are H/M/L; failure flags contain 0/1. Range checks found no negative measurements but did not establish safety limits.
+### Failure Rates by Product Type
 
-There are 27 disagreements: 18 observations have RNF = 1 with overall failure = 0 and no other flags; nine have overall failure = 1 with all modes zero. Their cause is unresolved. No labels were corrected and no rows were removed; the supplied overall target was retained.
+| Product type | Observations | Recorded failures | Failure rate |
+|---|---:|---:|---:|
+| L — Low quality variant | 6,000 | 235 | 3.92% |
+| M — Medium quality variant | 2,997 | 83 | 2.77% |
+| H — High quality variant | 1,003 | 21 | 2.09% |
 
-Mode counts: HDF 115, OSF 98, PWF 95, TWF 46 and RNF 19. They are not disjoint event counts because modes may overlap and may disagree with the overall target.
+Type L had the highest observed failure rate. Comparing rates rather than counts accounts for the unequal group sizes.
 
-## Operating conditions
+This supports a descriptive difference between product categories. It does not establish that product quality caused the failures, because operating conditions may also differ between groups.
 
-Exploratory groups use whole-file median cutoffs: torque 40.1 Nm and speed 1,503 rpm. High means at or above the cutoff. These are descriptive cutoffs, not safety thresholds or model features.
+### Torque and Rotational Speed
 
-| Speed | Torque | Observations | Failures | Failure rate |
-|---|---|---:|---:|---:|
-| High | High | 626 | 1 | 0.16% |
-| High | Low | 4,388 | 59 | 1.34% |
-| Low | High | 4,387 | 276 | 6.29% |
-| Low | Low | 599 | 3 | 0.50% |
+The scatter plot displays torque against rotational speed, with observations colored by recorded failure status.
 
-Failure-group median air and process temperatures were 301.6 K and 310.4 K, compared with 300.0 K and 310.0 K for non-failures. Median temperature gap is calculated per row, then summarized; it need not equal the difference between two group medians.
+Failure observations appear in several operating regions, including higher-torque, lower-speed conditions. Python summaries help quantify this visual pattern: failure observations had a median torque of **53.7 Nm** and median speed of **1,365 rpm**, compared with **39.9 Nm** and **1,507 rpm** for non-failure observations.
 
-The wear histogram shows percentages within each outcome group. Its concentration around 200-225 minutes among failures is not the probability of failure in that wear range.
+The overlap between outcomes matters. The chart suggests that operating measurements should be examined together, but it does not establish a boundary that reliably separates every failure from normal operation.
 
-## SQL and Tableau
+### Tool Wear by Failure Status
 
-SQL uses COUNT, SUM, AVG, GROUP BY and conditional filters to calculate totals, rates, mean operating conditions and label disagreements. SQL means and Python/Tableau medians are different statistics.
+Median accumulated tool-use time was **165 minutes for failure observations**, compared with **107 minutes for non-failure observations**—a difference of 58 minutes.
 
-The Tableau screenshot contains totals, type rates, torque versus speed, median wear and mode counts. Its displayed aggregates match the Python reference results. It describes observed labels across the full dataset, not future risk scores or model predictions. The original workbook needs a local CSV connection; setup instructions are in the dashboard documentation.
+This is consistent with greater tool wear being associated with failure in the dataset. However, the supporting Python distributions showed overlap: failures occurred at lower wear levels, and non-failures also occurred at higher wear levels.
 
-## Modeling method
+The median is a group summary. It is not a replacement threshold, an estimate of remaining tool life or a prediction that failure occurs after 165 minutes.
 
-Inputs: Type, air temperature, process temperature, rotational speed, torque and wear. Identifiers, failure-mode labels, derived temperature gap and EDA operating groups are excluded.
+### Failure-Mode Counts
 
-The same stratified 80/20 split uses seed 42. Training: 7,729 non-failures and 271 failures. Test: 1,932 non-failures and 68 failures.
+| Failure-mode flag | Flagged observations |
+|---|---:|
+| Heat dissipation failure — HDF | 115 |
+| Overstrain failure — OSF | 98 |
+| Power failure — PWF | 95 |
+| Tool wear failure — TWF | 46 |
+| Random failure — RNF | 19 |
 
-- Baseline always predicts zero.
-- Logistic regression: training-fitted numeric standardization and one-hot type encoding, balanced weights, max_iter=1000.
-- Random forest: one-hot type encoding, unscaled numerics, 200 trees, min_samples_leaf=2, balanced weights, seed 42.
-- Default classifier decision rules were used. No tuning against test results was performed.
+Heat dissipation was the most frequently flagged mode. These counts describe the supplied labels, not mutually exclusive failure events.
 
-| Model | Accuracy | Precision | Recall | F1 | TN | FP | FN | TP |
-|---|---:|---:|---:|---:|---:|---:|---:|---:|
-| No-failure baseline | 96.60% | 0%* | 0% | 0% | 1932 | 0 | 68 | 0 |
-| Logistic regression | 82.45% | 14.18% | 82.35% | 24.19% | 1593 | 339 | 12 | 56 |
-| Random forest | 98.05% | 79.59% | 57.35% | 66.67% | 1922 | 10 | 29 | 39 |
+The counts should not be added and interpreted as unique failures: modes can overlap, and the quality checks identified 27 disagreements between the overall failure label and the combined mode flags. The original labels were retained and the uncertainty documented.
 
-TN: correct non-failure; FP: false alarm; FN: missed failure; TP: detected failure. Precision = TP/(TP+FP); recall = TP/(TP+FN). *Undefined baseline precision is displayed as zero.
+### What the Dashboard Contributes
 
-Logistic regression raised 395 alerts, 56 correct. Forest raised 49 alerts, 39 correct. Forest generated 329 fewer false alarms but missed 17 additional failures. Without inspection costs and failure consequences, neither is an established operational winner.
+The dashboard connects overall failure frequency with product categories, operating measurements and failure-mode labels. It makes the descriptive findings accessible and provides context for the later model comparison.
 
-## Conclusion and learning
+The study found useful associations, but it did not produce a single operating threshold that explains every failure. This informed the decision to evaluate several inputs together through classification models.
 
-I expected operating measurements to provide useful failure signals. They did, but the analysis did not produce a simple wear threshold or a model that detects every failure without unnecessary alerts. The main lesson was to evaluate data consistency, operating conditions and prediction errors together.
-
-Random forest had the strongest F1 of the tested models; logistic regression caught more failures. Reporting this tradeoff is more useful than presenting the highest accuracy as proof of success. This project demonstrates a repeatable analysis method to test with plant data, not instructions for replacing equipment at a particular measurement.
-
-## Limitations and further work
-
-Synthetic generation rules limit real-world generalization. There is no defined prediction lead time, measured intervention benefit or remaining-useful-life estimate. Evaluation uses one split with only 68 failures, and full-data exploration occurred before splitting. This is an educational holdout rather than independent confirmatory validation. Row-order dependence and transfer to other equipment were not tested.
-
-Cross-validation, calibrated probabilities, average precision, confidence intervals and sensitivity to label disagreements remain future work. They are not claimed deliverables.
-
-A practical extension would collect timestamped machine histories, define inputs available before failure, select models using training folds, evaluate on later observations and test alert usefulness with maintenance engineers in a supervised pilot.
+The dashboard's practical contribution is to demonstrate how an analyst can organize evidence and identify questions for further investigation. Applying those findings to maintenance decisions would require validation using real equipment histories and review by maintenance engineers.
