@@ -1,65 +1,132 @@
 # Equipment Health and Failure-Risk Analytics for Industrial Operations
 
-A portfolio project by Sai Bhaskar Chundru connecting Mechanical Engineering and Data Analytics through Python, SQL, Tableau and machine learning.
+**An educational research project connecting Mechanical Engineering and Data Analytics.**
 
-## Question and conclusion
+## Overview
 
-Which recorded operating conditions are associated with failure, and how well can simple models distinguish failure observations?
+I developed this project to explore how engineering knowledge and data analytics can work together to investigate equipment health and failure patterns.
 
-The data contained useful patterns, but no single measurement reliably separated failures from non-failures. Logistic regression caught more failures but produced many false alarms; random forest produced more precise alerts but missed more failures. The project demonstrates an investigation workflow, not a validated advance-warning system.
+Drawing on my Mechanical Engineering background and studies in Data Analytics, I examined operating measurements such as temperature, rotational speed, torque and tool wear. The project follows an analytical workflow from data understanding and quality checks to SQL analysis, machine-learning classification and dashboard development.
 
-## Findings
+My objective was to investigate the evidence rather than confirm a predetermined conclusion. The study considers both findings that support the initial hypotheses and results that reveal limitations or suggest further questions.
 
-- **10,000 observations; 339 failures (3.39%).** No missing values or repeated UDI identifiers were found.
-- Failure rates: **L 3.92%, M 2.77%, H 2.09%**.
-- Median tool wear: **165 minutes for failures versus 107 for non-failures**. Distributions overlap; these are not maintenance thresholds.
-- Failure observations had higher median torque and lower median speed.
-- **27 label disagreements** were documented; original labels were preserved.
+## Research Objective
 
-## Model comparison
+**Which recorded operating conditions are associated with equipment failure, and how effectively can classification models distinguish failure observations from non-failure observations?**
 
-Same stratified 80/20 split, seed 42: 8,000 training observations and 2,000 test observations, including 68 test failures. Identifiers and mode labels were excluded; preprocessing was fitted on training data only.
+The investigation focuses on:
 
-| Model | Precision | Recall | F1 | Detected failures | Missed failures | False alarms |
-|---|---:|---:|---:|---:|---:|---:|
-| Always no failure | 0%* | 0% | 0% | 0 | 68 | 0 |
-| Balanced logistic regression | 14.18% | 82.35% | 24.19% | 56 | 12 | 339 |
-| Balanced random forest | 79.59% | 57.35% | 66.67% | 39 | 29 | 10 |
+- Understanding the dataset and the engineering meaning of its variables.
+- Identifying data-quality issues and documenting how they are handled.
+- Exploring relationships between operating conditions and failure outcomes.
+- Comparing machine-learning models through their predictions and errors.
+- Communicating findings clearly while distinguishing evidence from assumptions.
 
-*Baseline precision is undefined without alerts; code displays zero by convention. Its 96.60% accuracy shows why accuracy alone is misleading. Random forest had the highest F1 here, but choosing an operational model requires costs for missed failures and unnecessary inspections.
+## Technical Approach
 
-See [findings and limitations](reports/findings.md), [SQL setup](sql/README.md) and [Tableau documentation](dashboard/README.md).
+| Area | Tools and Methods | Application |
+|---|---|---|
+| Data understanding and preparation | Python, pandas | Inspect data types, missing values, identifiers, categories and label consistency |
+| Exploratory analysis | pandas, Matplotlib | Compare operating conditions, distributions and failure rates |
+| SQL analysis | MySQL | Answer operational questions using aggregation, grouping and conditional filtering |
+| Machine learning | scikit-learn | Compare an always-no-failure baseline, logistic regression and random forest |
+| Model preparation | Train/test splitting, pipelines, one-hot encoding, standardization | Prepare inputs consistently and fit preprocessing on training data |
+| Model evaluation | Precision, recall, F1, accuracy and confusion matrices | Assess detected failures, missed failures and false alarms |
+| Visualization | Tableau | Present equipment-health summaries through calculated measures, charts and a dashboard |
+| Version control | Git, GitHub | Maintain incremental commits, development branches and pull requests |
 
-## Tableau
+## Project Workflow
 
-![Equipment health dashboard](Tableau/EQUIPMENT%20HEALTH%20%26%20FAILURE%20RISK%20ANALYTICS.png)
+1. **Understand the data** — define the observation, column meanings and analytical questions.
+2. **Check data quality** — investigate missing values, repeated identifiers, measurement ranges and conflicting labels.
+3. **Explore operating patterns** — compare failure and non-failure observations and examine the research hypotheses.
+4. **Analyze with SQL** — reproduce selected summaries and answer operational questions.
+5. **Build the dashboard** — communicate recorded operating conditions and failure outcomes in Tableau.
+6. **Evaluate models** — compare a simple baseline with learned classifiers using the same data split.
+7. **Document the study** — explain findings, unexpected outcomes, limitations and potential next steps.
 
-The [workbook](Tableau/equipment_health_failure_risk_dashboard.twb) summarizes observed outcomes, not model predictions. Reconnect it to your local CSV when opening it.
+Data issues are investigated before changes are made. Where the correct value cannot be established, the uncertainty is documented rather than silently corrected.
 
-## Reproduce
+## Repository Structure
 
-Download the [UCI AI4I 2020 dataset](https://doi.org/10.24432/C5HS5C) into `data/raw/ai4i2020.csv`. From the repository root:
+```text
+├── README.md
+├── requirements.txt
+├── data/
+│   ├── README.md
+│   └── data-dictionary.md
+├── notebooks/
+│   ├── 01_data_understanding.py
+│   ├── 02_data_quality_checks.py
+│   ├── 03_exploratory_analysis.py
+│   ├── 04_baseline_models.py
+│   └── SQL/
+│       └── 01_failure_analysis.sql
+├── sql/
+│   └── README.md
+├── Tableau/
+│   ├── equipment_health_failure_risk_dashboard.twb
+│   └── EQUIPMENT HEALTH & FAILURE RISK ANALYTICS.png
+├── dashboard/
+│   └── README.md
+└── reports/
+    └── findings.md
+```
+
+Downloaded data, generated outputs and private learning notes are maintained locally and excluded from Git.
+
+## Getting Started
+
+Download the dataset using the instructions in [data/README.md](data/README.md) and place `ai4i2020.csv` inside `data/raw/`.
+
+From the repository root, install the Python dependencies:
 
 ```powershell
 python -m pip install -r requirements.txt
+```
+
+Run the analysis scripts in order:
+
+```powershell
 python notebooks/01_data_understanding.py
 python notebooks/02_data_quality_checks.py
 python notebooks/03_exploratory_analysis.py
 python notebooks/04_baseline_models.py
 ```
 
-EDA charts are saved to local `outputs/`; model results print to the terminal. Observed environment: Python 3.13.3, pandas 2.3.3, NumPy 2.4.2, matplotlib 3.10.8, scikit-learn 1.7.1. Requirements are not pinned; other versions may produce differences.
+The exploratory script saves charts to the local `outputs/` folder. The modeling script prints evaluation metrics and confusion matrices.
 
-| Location | Purpose |
-|---|---|
-| `notebooks/` | Python checks, exploration and modeling |
-| `notebooks/SQL/01_failure_analysis.sql` | MySQL business queries |
-| `Tableau/` | Workbook and dashboard screenshot |
-| `reports/findings.md` | Expectations, evidence, interpretation and future work |
-| `data/`, `sql/`, `dashboard/` | Data dictionary, attribution and setup guidance |
+For the other project components, follow the [SQL setup instructions](sql/README.md) and [Tableau workbook instructions](dashboard/README.md).
 
-## Scope
+## Results and Documentation
 
-The portfolio implementation covers descriptive analysis and baseline classification. The data are synthetic and provide no defined pre-failure warning window. Full-data EDA preceded modeling; evaluation used one random split without external validation or formal hypothesis tests. No downtime reduction, cost saving or deployment readiness is claimed.
+The detailed results are kept separate from this overview:
 
-Raw data, generated outputs and private learning notes remain local and excluded from Git. Dataset: AI4I 2020 Predictive Maintenance Dataset (2020), UCI Machine Learning Repository, [DOI](https://doi.org/10.24432/C5HS5C), CC BY 4.0.
+- **[Findings and conclusions](reports/findings.md)** — research hypotheses, observed results, model comparisons, interpretation and limitations.
+- **[Data dictionary](data/data-dictionary.md)** — variable definitions and intended roles.
+- **[Dataset documentation](data/README.md)** — source attribution and local setup.
+- **[SQL documentation](sql/README.md)** — analysis queries and database instructions.
+- **[Tableau documentation](dashboard/README.md)** — dashboard measures, screenshot and workbook setup.
+
+## Research Context and Limitations
+
+This is an **educational research and portfolio project**, not a deployed industrial maintenance system.
+
+The study uses the **AI4I 2020 Predictive Maintenance Dataset**, a **synthetic dataset** distributed through the UCI Machine Learning Repository. Its observations were generated to represent industrial operating conditions; they were not collected from a real factory for this project.
+
+The analysis explores associations and evaluates classification models. It does not establish causal relationships, a defined warning period before breakdown, or measurable maintenance savings.
+
+Applying the approach in industry would require validation using real equipment histories, measurements available before failure, and assessment of the resulting alerts by maintenance engineers.
+
+## Dataset Attribution
+
+AI4I 2020 Predictive Maintenance Dataset. UCI Machine Learning Repository.
+
+- **Source:** [Dataset DOI](https://doi.org/10.24432/C5HS5C)
+- **Dataset license:** Creative Commons Attribution 4.0 International — CC BY 4.0
+
+## Author
+
+**Sai Bhaskar Chundru**  
+Mechanical Engineering background | Data Analytics  
+[GitHub](https://github.com/SaiBhaskar72)
