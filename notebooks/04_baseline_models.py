@@ -1,29 +1,61 @@
-"""Prepare a data split and evaluate a no-failure baseline."""
+"""Compare a no-failure baseline with logistic regression."""
 
 from pathlib import Path
 
 import pandas as pd
+from sklearn.compose import ColumnTransformer
 from sklearn.dummy import DummyClassifier
+from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import (
     accuracy_score,
     confusion_matrix,
+    f1_score,
+    precision_score,
     recall_score,
 )
 from sklearn.model_selection import train_test_split
+from sklearn.pipeline import Pipeline
+from sklearn.preprocessing import OneHotEncoder, StandardScaler
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 DATA_PATH = PROJECT_ROOT / "data" / "raw" / "ai4i2020.csv"
 
 
+def evaluate_model(name, actual, predicted):
+    """Print performance and explain the prediction counts."""
+    print(f"\n{name}")
+    print("-" * 40)
+
+    print(f"Accuracy: {accuracy_score(actual, predicted):.2%}")
+    print(
+        f"Failure precision: "
+        f"{precision_score(actual, predicted, zero_division=0):.2%}"
+    )
+    print(
+        f"Failure recall: "
+        f"{recall_score(actual, predicted, zero_division=0):.2%}"
+    )
+    print(
+        f"Failure F1: "
+        f"{f1_score(actual, predicted, zero_division=0):.2%}"
+    )
+
+    matrix = confusion_matrix(actual, predicted, labels=[0, 1])
+    tn, fp, fn, tp = matrix.ravel()
+
+    print("\nConfusion matrix:")
+    print(matrix)
+    print("Correctly identified non-failures:", tn)
+    print("False alarms:", fp)
+    print("Missed failures:", fn)
+    print("Detected failures:", tp)
+
+
 def main():
-    # 1. Load the dataset.
     df = pd.read_csv(DATA_PATH)
 
-    # 2. Select operating measurements as inputs.
-    # Exclude identifiers and failure-mode labels.
-    features = [
-        "Type",
+    numeric_features = [
         "Air temperature [K]",
         "Process temperature [K]",
         "Rotational speed [rpm]",
@@ -31,11 +63,12 @@ def main():
         "Tool wear [min]",
     ]
 
-    X = df[features]
+    categorical_features = ["Type"]
+
+    X = df[categorical_features + numeric_features]
     y = df["Machine failure"]
 
-    # 3. Split into 80% training and 20% test data.
-    # Stratification preserves approximately the same failure rate.
+    # Keep the same split as our previous baseline.
     X_train, X_test, y_train, y_test = train_test_split(
         X,
         y,
@@ -46,50 +79,62 @@ def main():
 
     print("Training observations:", len(X_train))
     print("Test observations:", len(X_test))
+    print("Training failures:", y_train.sum())
+    print("Test failures:", y_test.sum())
 
-    print("\nTraining failure counts:")
-    print(y_train.value_counts().sort_index())
-
-    print("\nTest failure counts:")
-    print(y_test.value_counts().sort_index())
-
-    # 4. Create a baseline that always predicts no failure.
+    # Model 1: always predict no failure.
     baseline = DummyClassifier(
         strategy="constant",
         constant=0,
     )
 
     baseline.fit(X_train, y_train)
-    predictions = baseline.predict(X_test)
 
-    # 5. Evaluate the baseline on test observations.
-    accuracy = accuracy_score(y_test, predictions)
-    recall = recall_score(y_test, predictions, zero_division=0)
-
-    print("\nAlways-no-failure baseline:")
-    print(f"Accuracy: {accuracy:.2%}")
-    print(f"Failure recall: {recall:.2%}")
-
-    # Rows represent actual outcomes.
-    # Columns represent predicted outcomes.
-    matrix = confusion_matrix(
+    evaluate_model(
+        "Always-no-failure baseline",
         y_test,
-        predictions,
-        labels=[0, 1],
+        baseline.predict(X_test),
     )
 
-    print("\nConfusion matrix:")
-    print(matrix)
-
-    true_negatives, false_positives, false_negatives, true_positives = (
-        matrix.ravel()
+    # Prepare inputs for logistic regression.
+    preprocessing = ColumnTransformer(
+        transformers=[
+            (
+                "numeric",
+                StandardScaler(),
+                numeric_features,
+            ),
+            (
+                "category",
+                OneHotEncoder(handle_unknown="ignore"),
+                categorical_features,
+            ),
+        ]
     )
 
-    print("\nWhat the matrix means:")
-    print("Correctly identified non-failures:", true_negatives)
-    print("False alarms:", false_positives)
-    print("Missed failures:", false_negatives)
-    print("Detected failures:", true_positives)
+    # Keep preprocessing and the model together.
+    logistic_model = Pipeline(
+        steps=[
+            ("preprocessing", preprocessing),
+            (
+                "classifier",
+                LogisticRegression(
+                    max_iter=1000,
+                    class_weight="balanced",
+                    random_state=42,
+                ),
+            ),
+        ]
+    )
+
+    # Learn preprocessing and model parameters from training data only.
+    logistic_model.fit(X_train, y_train)
+
+    evaluate_model(
+        "Logistic regression — balanced class weights",
+        y_test,
+        logistic_model.predict(X_test),
+    )
 
 
 if __name__ == "__main__":
