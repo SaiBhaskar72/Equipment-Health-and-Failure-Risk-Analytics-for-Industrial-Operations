@@ -1,10 +1,11 @@
-"""Compare a no-failure baseline with logistic regression."""
+"""Compare three approaches to classifying equipment failures."""
 
 from pathlib import Path
 
 import pandas as pd
 from sklearn.compose import ColumnTransformer
 from sklearn.dummy import DummyClassifier
+from sklearn.ensemble import RandomForestClassifier
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import (
     accuracy_score,
@@ -23,36 +24,48 @@ DATA_PATH = PROJECT_ROOT / "data" / "raw" / "ai4i2020.csv"
 
 
 def evaluate_model(name, actual, predicted):
-    """Print performance and explain the prediction counts."""
-    print(f"\n{name}")
-    print("-" * 40)
+    """Display results and return one row for the comparison table."""
 
-    print(f"Accuracy: {accuracy_score(actual, predicted):.2%}")
-    print(
-        f"Failure precision: "
-        f"{precision_score(actual, predicted, zero_division=0):.2%}"
-    )
-    print(
-        f"Failure recall: "
-        f"{recall_score(actual, predicted, zero_division=0):.2%}"
-    )
-    print(
-        f"Failure F1: "
-        f"{f1_score(actual, predicted, zero_division=0):.2%}"
-    )
+    accuracy = accuracy_score(actual, predicted)
+    precision = precision_score(actual, predicted, zero_division=0)
+    recall = recall_score(actual, predicted, zero_division=0)
+    f1 = f1_score(actual, predicted, zero_division=0)
 
+    # Rows = actual outcomes; columns = predicted outcomes.
     matrix = confusion_matrix(actual, predicted, labels=[0, 1])
     tn, fp, fn, tp = matrix.ravel()
 
+    print(f"\n{name}")
+    print("-" * 45)
+    print(f"Accuracy: {accuracy:.2%}")
+    print(f"Failure precision: {precision:.2%}")
+    print(f"Failure recall: {recall:.2%}")
+    print(f"Failure F1: {f1:.2%}")
+
     print("\nConfusion matrix:")
     print(matrix)
+
     print("Correctly identified non-failures:", tn)
     print("False alarms:", fp)
     print("Missed failures:", fn)
     print("Detected failures:", tp)
 
+    return {
+        "Model": name,
+        "Accuracy (%)": accuracy * 100,
+        "Precision (%)": precision * 100,
+        "Recall (%)": recall * 100,
+        "F1 (%)": f1 * 100,
+        "Detected failures": int(tp),
+        "Missed failures": int(fn),
+        "False alarms": int(fp),
+    }
+
 
 def main():
+    # ---------------------------------------------------------
+    # 1. Load data and select inputs and target
+    # ---------------------------------------------------------
     df = pd.read_csv(DATA_PATH)
 
     numeric_features = [
@@ -65,10 +78,13 @@ def main():
 
     categorical_features = ["Type"]
 
+    # Exclude identifiers and failure-mode labels from inputs.
     X = df[categorical_features + numeric_features]
     y = df["Machine failure"]
 
-    # Keep the same split as our previous baseline.
+    # ---------------------------------------------------------
+    # 2. Keep the same 80/20 split for all three models
+    # ---------------------------------------------------------
     X_train, X_test, y_train, y_test = train_test_split(
         X,
         y,
@@ -82,7 +98,11 @@ def main():
     print("Training failures:", y_train.sum())
     print("Test failures:", y_test.sum())
 
-    # Model 1: always predict no failure.
+    results = []
+
+    # ---------------------------------------------------------
+    # Model 1: always predict no failure
+    # ---------------------------------------------------------
     baseline = DummyClassifier(
         strategy="constant",
         constant=0,
@@ -90,14 +110,19 @@ def main():
 
     baseline.fit(X_train, y_train)
 
-    evaluate_model(
-        "Always-no-failure baseline",
-        y_test,
-        baseline.predict(X_test),
+    results.append(
+        evaluate_model(
+            "Always no failure",
+            y_test,
+            baseline.predict(X_test),
+        )
     )
 
-    # Prepare inputs for logistic regression.
-    preprocessing = ColumnTransformer(
+    # ---------------------------------------------------------
+    # Model 2: logistic regression
+    # ---------------------------------------------------------
+    # Learn scaling and category encoding from training data.
+    logistic_preprocessing = ColumnTransformer(
         transformers=[
             (
                 "numeric",
@@ -112,10 +137,9 @@ def main():
         ]
     )
 
-    # Keep preprocessing and the model together.
     logistic_model = Pipeline(
         steps=[
-            ("preprocessing", preprocessing),
+            ("preprocessing", logistic_preprocessing),
             (
                 "classifier",
                 LogisticRegression(
@@ -127,13 +151,72 @@ def main():
         ]
     )
 
-    # Learn preprocessing and model parameters from training data only.
     logistic_model.fit(X_train, y_train)
 
-    evaluate_model(
-        "Logistic regression — balanced class weights",
-        y_test,
-        logistic_model.predict(X_test),
+    results.append(
+        evaluate_model(
+            "Logistic regression",
+            y_test,
+            logistic_model.predict(X_test),
+        )
+    )
+
+    # ---------------------------------------------------------
+    # Model 3: random forest
+    # ---------------------------------------------------------
+    # Trees do not require numeric scaling.
+    forest_preprocessing = ColumnTransformer(
+        transformers=[
+            (
+                "numeric",
+                "passthrough",
+                numeric_features,
+            ),
+            (
+                "category",
+                OneHotEncoder(handle_unknown="ignore"),
+                categorical_features,
+            ),
+        ]
+    )
+
+    forest_model = Pipeline(
+        steps=[
+            ("preprocessing", forest_preprocessing),
+            (
+                "classifier",
+                RandomForestClassifier(
+                    n_estimators=200,
+                    min_samples_leaf=2,
+                    class_weight="balanced",
+                    random_state=42,
+                    n_jobs=-1,
+                ),
+            ),
+        ]
+    )
+
+    forest_model.fit(X_train, y_train)
+
+    results.append(
+        evaluate_model(
+            "Random forest",
+            y_test,
+            forest_model.predict(X_test),
+        )
+    )
+
+    # ---------------------------------------------------------
+    # 3. Display the comparison
+    # ---------------------------------------------------------
+    comparison = pd.DataFrame(results)
+
+    print("\nMODEL COMPARISON")
+    print(comparison.round(2).to_string(index=False))
+
+    print(
+        "\nNote: precision is reported as 0 by convention "
+        "when a model predicts no failures."
     )
 
 
